@@ -14,22 +14,23 @@ def unpickle(file):
 class Dataset:
     def __init__(self, path):
         self.d = unpickle(path)
-        self.num_samples = d['data'].shape[0]
+        self.num_samples = self.d['data'].shape[0]
         self.index = list(range(self.num_samples))
         np.random.shuffle(self.index)
         self.i = 0
-        
 
-    def get_batch(size):
-        if i + size >= self.num_samples:
-            i = 0
-        data = d['data'][i:i + size, :]
-        data = np.reshape(data, [-1, 32, 32, 3])
-        labels = d['fine_labels'][i:i + size]
-        i += size
+    def get_batch(self, size=None):
+        if size is None:
+            size = self.num_samples
+        if self.i + size >= self.num_samples:
+            self.i = 0
+        data = self.d['data'][self.i:self.i + size, :]
+        data = np.reshape(data, [size, 32, 32, 3])
+        labels = self.d['fine_labels'][self.i:self.i + size]
+        self.i += size
         return data, labels
     
-    def refresh():
+    def refresh(self):
         self.i = 0
         np.random.shuffle(self.index)
 
