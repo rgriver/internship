@@ -7,4 +7,4 @@ def unpickle(file):
     return dict
 
 
-d = unpickle('cifar-100-python/train')
+d = unpickle('home/rriverag/cifar-100-python/train')
