@@ -12,6 +12,7 @@ BATCH_SIZE = 256
 NUM_CLASSES = 100
 IMG_SIZE = 224
 LEARNING_RATE = 0.00001
+DROP_KEEP_PROB = 0.5
 
 train = Dataset('cifar-100-python/train')
 test = Dataset('cifar-100-python/test')
@@ -32,12 +33,14 @@ __, end_points = tf.contrib.slim.nets.vgg.vgg_16(resized_rgb)
 net = end_points['vgg_16/fc7']
 
 with tf.variable_scope('add'):
+    net = tf.layers.dropout(net, rate=DROP_KEEP_PROB, name='dropout1')
     net = tf.layers.conv2d(net,
                            NUM_CLASSES,
                            [1, 1],
                            activation=None,
-                           name='fc8')
-    logits = tf.squeeze(net)
+                           name='conv1')
+    logits = tf.squeeze(net, name='squeezed1')
+
 
 with tf.variable_scope('loss'):
     cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(
@@ -50,7 +53,6 @@ with tf.variable_scope('loss'):
 with tf.name_scope('train'):
     vgg_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, 'vgg_16')
     add_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, 'add')
-    print(add_vars)
     optimizer = tf.train.GradientDescentOptimizer(LEARNING_RATE)
     full_opt_op = optimizer.minimize(loss)
     add_opt_op = optimizer.minimize(loss, var_list=add_vars)
