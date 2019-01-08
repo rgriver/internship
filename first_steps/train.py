@@ -80,3 +80,4 @@ with tf.Session() as sess:
                 rgb_batch, y_batch = test.get_batch()
                 acc_test = accuracy.eval(feed_dict={rgb: rgb_batch, y: y_batch})
                 f.write('{} Train accuracy: {} - Test accuracy: {}\n'.format(epoch, acc_train, acc_test))
+            train.clear_index()

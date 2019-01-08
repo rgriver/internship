@@ -29,6 +29,9 @@ class Dataset:
         labels = self.d['fine_labels'][self.i:self.i + size]
         self.i += size
         return data, labels
+
+    def clear_index(self):
+        self.i = 0
     
     def refresh(self):
         self.i = 0
