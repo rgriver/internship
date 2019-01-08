@@ -68,13 +68,13 @@ num_iterations = train.num_samples // BATCH_SIZE
 with tf.Session() as sess:
     init.run()
     vgg_saver.restore(sess, 'cifar-100-python/vgg_16.ckpt')
-    for epoch in range(NUM_EPOCHS):
-        for i in range(num_iterations):
-            rgb_batch, y_batch = train.get_batch(BATCH_SIZE)
-            sess.run(add_opt_op, feed_dict={rgb: rgb_batch, y: y_batch})
-            saver.save(sess, 'saved/add_model.ckpt')
-            acc_train = accuracy.eval(feed_dict={rgb: rgb_batch, y: y_batch})
-            rgb_batch, y_batch = test.get_batch()
-            acc_test = accuracy.eval(feed_dict={rgb: rgb_batch, y: y_batch})
-            print(epoch, "Train accuracy:", acc_train, "Test accuracy:",
-                  acc_test)
+    with open('saved/results.txt', 'wb') as f:
+        for epoch in range(NUM_EPOCHS):
+            for i in range(num_iterations):
+                rgb_batch, y_batch = train.get_batch(BATCH_SIZE)
+                sess.run(add_opt_op, feed_dict={rgb: rgb_batch, y: y_batch})
+                saver.save(sess, 'saved/add_model.ckpt')
+                acc_train = accuracy.eval(feed_dict={rgb: rgb_batch, y: y_batch})
+                rgb_batch, y_batch = test.get_batch()
+                acc_test = accuracy.eval(feed_dict={rgb: rgb_batch, y: y_batch})
+                f.write('{} Train accuracy: {} - Test accuracy: {}\n'.format(epoch, acc_train, acc_test))
