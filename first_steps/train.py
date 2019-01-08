@@ -8,14 +8,14 @@ from dataset import Dataset
 
 
 NUM_EPOCHS = 100
-BATCH_SIZE = 256
+BATCH_SIZE = 128
 NUM_CLASSES = 100
 IMG_SIZE = 224
-LEARNING_RATE = 0.00001
+LEARNING_RATE = 0.0001
 DROP_KEEP_PROB = 0.5
 
-train = Dataset('cifar-100-python/train')
-test = Dataset('cifar-100-python/test')
+train = Dataset('/home/rriverag/cifar-100-python/train')
+test = Dataset('/home/rriverag/cifar-100-python/test')
 
 rgb = tf.placeholder(tf.float32,
                      shape=[None, 32, 32, 3],
@@ -69,15 +69,18 @@ num_iterations = train.num_samples // BATCH_SIZE
 
 with tf.Session() as sess:
     init.run()
-    vgg_saver.restore(sess, 'cifar-100-python/vgg_16.ckpt')
+    vgg_saver.restore(sess, '/home/rriverag/cifar-100-python/vgg_16.ckpt')
     with open('saved/results.txt', 'wb') as f:
         for epoch in range(NUM_EPOCHS):
             for i in range(num_iterations):
                 rgb_batch, y_batch = train.get_batch(BATCH_SIZE)
-                sess.run(add_opt_op, feed_dict={rgb: rgb_batch, y: y_batch})
+                sess.run(full_opt_op, feed_dict={rgb: rgb_batch, y: y_batch})
                 saver.save(sess, 'saved/add_model.ckpt')
                 acc_train = accuracy.eval(feed_dict={rgb: rgb_batch, y: y_batch})
-                rgb_batch, y_batch = test.get_batch()
+                rgb_batch, y_batch = test.get_batch(256)
                 acc_test = accuracy.eval(feed_dict={rgb: rgb_batch, y: y_batch})
-                f.write('{} Train accuracy: {} - Test accuracy: {}\n'.format(epoch, acc_train, acc_test))
+                msg = '{} Train accuracy: {} - Test accuracy: {}\n'.format(epoch, acc_train, acc_test)
+                # f.write(msg)
+                print(msg)
+                test.clear_index()
             train.clear_index()
