@@ -11,8 +11,13 @@ NUM_EPOCHS = 100
 BATCH_SIZE = 128
 NUM_CLASSES = 100
 IMG_SIZE = 224
-LEARNING_RATE = 0.0001
+LEARNING_RATE = 0.001
 DROP_KEEP_PROB = 0.5
+
+FLAGS = tf.flags.FLAGS
+
+tf.flags.DEFINE_string('model', 'full', 'the model used')
+
 
 train = Dataset('/home/rriverag/cifar-100-python/train')
 test = Dataset('/home/rriverag/cifar-100-python/test')
@@ -41,6 +46,10 @@ with tf.variable_scope('add'):
                            name='conv1')
     logits = tf.squeeze(net, name='squeezed1')
 
+net2 = end_points['vgg_16/fc5']
+
+with tf.variable_scope('model2'):
+    pass
 
 with tf.variable_scope('loss'):
     cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(
@@ -65,22 +74,30 @@ init = tf.global_variables_initializer()
 vgg_saver = tf.train.Saver(var_list=vgg_vars)
 saver = tf.train.Saver(var_list=add_vars)
 
+tf.summary.scalar('train_loss', train_loss)
+tf.summary.scalar('test_loss', test_loss)
+tf.summary.scalar('test_accuracy_top1', test_accuracy1)
+tf.summary.scalar('test_accuracy_top5', test_accuracy5)
+
 num_iterations = train.num_samples // BATCH_SIZE
 
 with tf.Session() as sess:
     init.run()
     vgg_saver.restore(sess, '/home/rriverag/cifar-100-python/vgg_16.ckpt')
-    with open('saved/results.txt', 'wb') as f:
-        for epoch in range(NUM_EPOCHS):
-            for i in range(num_iterations):
-                rgb_batch, y_batch = train.get_batch(BATCH_SIZE)
-                sess.run(full_opt_op, feed_dict={rgb: rgb_batch, y: y_batch})
-                saver.save(sess, 'saved/add_model.ckpt')
-                acc_train = accuracy.eval(feed_dict={rgb: rgb_batch, y: y_batch})
-                rgb_batch, y_batch = test.get_batch(256)
-                acc_test = accuracy.eval(feed_dict={rgb: rgb_batch, y: y_batch})
-                msg = '{} Train accuracy: {} - Test accuracy: {}\n'.format(epoch, acc_train, acc_test)
-                # f.write(msg)
-                print(msg)
-                test.clear_index()
-            train.clear_index()
+    for epoch in range(NUM_EPOCHS):
+        for i in range(num_iterations):
+            rgb_batch, y_batch = train.get_batch(BATCH_SIZE)
+            sess.run(full_opt_op, feed_dict={rgb: rgb_batch, y: y_batch})
+            saver.save(sess, 'saved/add_model.ckpt')
+            # acc_train = accuracy.eval(feed_dict={rgb: rgb_batch, y: y_batch})
+            rgb_batch, y_batch = test.get_batch(256)
+            acc_test = accuracy.eval(feed_dict={rgb: rgb_batch, y: y_batch})
+            msg = 'epoch{} ({}/{}) Train accuracy: {} - Test accuracy: {}\n'.format(epoch,
+                                                                                    i,
+                                                                                    num_iterations,
+                                                                                    acc_train,
+                                                                                    acc_test)
+            # f.write(msg)
+            print(msg)
+            test.clear_index()
+        train.clear_index()
