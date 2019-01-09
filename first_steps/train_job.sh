@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
 
-python train.py -summaries_dir="/home/rriverag/first_steps/summaries"
+python3 train.py -summaries_dir="/home/rriverag/internship/first_steps/summaries" \
+                -checkpoints_dir="/home/rriverag/internship/first_steps/checkpoints"
