@@ -6,7 +6,6 @@ import numpy as np
 import tensorflow.contrib.slim.nets
 from dataset import Dataset
 
-
 NUM_EPOCHS = 100
 BATCH_SIZE = 128
 NUM_CLASSES = 100
@@ -17,6 +16,7 @@ DROP_KEEP_PROB = 0.5
 FLAGS = tf.flags.FLAGS
 
 tf.flags.DEFINE_string('model', 'full', 'the model used')
+tf.flags.DEFINE_string('summaries_dir', None, 'directory for summaries')
 
 
 train = Dataset('/home/rriverag/cifar-100-python/train')
@@ -67,37 +67,54 @@ with tf.name_scope('train'):
     add_opt_op = optimizer.minimize(loss, var_list=add_vars)
 
 with tf.name_scope('eval'):
-    correct = tf.nn.in_top_k(logits, y, 1)
-    accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
+    correct1 = tf.nn.in_top_k(logits, y, 1)
+    correct5 = tf.nn.in_top_k(logits, y, 5)
+    accuracy1 = tf.reduce_mean(tf.cast(correct1, tf.float32))
+    accuracy5 = tf.reduce_mean(tf.cast(correct5, tf.float32))
 
 init = tf.global_variables_initializer()
 vgg_saver = tf.train.Saver(var_list=vgg_vars)
 saver = tf.train.Saver(var_list=add_vars)
 
-tf.summary.scalar('train_loss', train_loss)
-tf.summary.scalar('test_loss', test_loss)
-tf.summary.scalar('test_accuracy_top1', test_accuracy1)
-tf.summary.scalar('test_accuracy_top5', test_accuracy5)
+tf.summary.scalar('loss', loss)
+tf.summary.scalar('accuracy1', accuracy1)
+tf.summary.scalar('accuracy5', accuracy5)
+merged_summary = tf.summary.merge_all()
 
 num_iterations = train.num_samples // BATCH_SIZE
 
 with tf.Session() as sess:
+    train_writer = tf.summary.FileWriter(FLAGS.summaries_dir + '/train',
+                                         sess.graph)
+    test_writer = tf.summary.FileWriter(FLAGS.summaries_dir + '/test')
+
     init.run()
     vgg_saver.restore(sess, '/home/rriverag/cifar-100-python/vgg_16.ckpt')
+
+    feed_dict = {}
+
     for epoch in range(NUM_EPOCHS):
         for i in range(num_iterations):
             rgb_batch, y_batch = train.get_batch(BATCH_SIZE)
-            sess.run(full_opt_op, feed_dict={rgb: rgb_batch, y: y_batch})
+            feed_dict[rgb] = rgb_batch
+            feed_dict[y] = y_batch
+            sess.run(full_opt_op, feed_dict=feed_dict)
             saver.save(sess, 'saved/add_model.ckpt')
             # acc_train = accuracy.eval(feed_dict={rgb: rgb_batch, y: y_batch})
-            rgb_batch, y_batch = test.get_batch(256)
-            acc_test = accuracy.eval(feed_dict={rgb: rgb_batch, y: y_batch})
-            msg = 'epoch{} ({}/{}) Train accuracy: {} - Test accuracy: {}\n'.format(epoch,
-                                                                                    i,
-                                                                                    num_iterations,
-                                                                                    acc_train,
-                                                                                    acc_test)
-            # f.write(msg)
-            print(msg)
-            test.clear_index()
+
+        # Train loss
+        summary, train_loss = sess.run([merged_summary, loss],
+                                       feed_dict=feed_dict)
+        train_writer.add_summary(summary, epoch)
+
+        # Test loss and accuracy
+        rgb_batch, y_batch = test.get_batch()
+        feed_dict[rgb] = rgb_batch
+        feed_dict[y] = y_batch
+        summary, test_loss, test_accuracy1, test_accuracy5 = \
+            sess.run([merged_summary, loss, accuracy5, accuracy1],
+                     feed_dict=feed_dict)
+        test_writer.add_summary(summary, epoch)
+
+        test.clear_index()
         train.clear_index()
