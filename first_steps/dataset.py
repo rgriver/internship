@@ -26,6 +26,9 @@ class Dataset:
             self.i = 0
         data = self.d[b'data'][self.i:self.i + size, :]
         data = np.reshape(data, [size, 32, 32, 3])
+        data = data / 255.0
+        data = data * 2.0
+        data -= 1
         labels = self.d[b'fine_labels'][self.i:self.i + size]
         self.i += size
         return data, labels
