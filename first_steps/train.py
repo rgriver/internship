@@ -82,7 +82,8 @@ with tf.name_scope('eval'):
 
 init = tf.global_variables_initializer()
 vgg_saver = tf.train.Saver(var_list=vgg_vars)
-saver = tf.train.Saver(var_list=add_vars)
+add_saver = tf.train.Saver(var_list=add_vars)
+saver = tf.train.Saver()
 
 train_loss_summary = tf.summary.scalar('train_loss', loss)
 train_accuracy1_summary = tf.summary.scalar('train_accuracy1', accuracy1)
@@ -103,12 +104,13 @@ with tf.Session() as sess:
     test_writer = tf.summary.FileWriter(FLAGS.summaries_dir + '/test')
 
     init.run()
-    # vgg_saver.restore(sess, '/home/rriverag/cifar-100-python/vgg_16.ckpt')
-    saver.restore(sess, FLAGS.checkpoints_dir + '/add_model.ckpt')
+    vgg_saver.restore(sess, '/home/rriverag/cifar-100-python/vgg_16.ckpt')
+    add_saver.restore(sess, FLAGS.checkpoints_dir + '/add_model.ckpt')
+    # saver.restore(sess, FLAGS.checkpoints_dir + 'base/model.ckpt')
 
     feed_dict = {}
-    # display_step = 0
-    for epoch in range(NUM_EPOCHS):
+    display_step = 0
+    for epoch in range(33, NUM_EPOCHS):
         for i in range(num_iterations):
             rgb_batch, y_batch = train.get_batch(BATCH_SIZE)
             feed_dict[rgb] = rgb_batch
@@ -118,13 +120,13 @@ with tf.Session() as sess:
                                                                                  accuracy1,
                                                                                  accuracy5],
                                                                                 feed_dict=feed_dict)
-            # display_step += 1
-            if i % 10 == 0:
+            display_step += 1
+            if display_step % 10 == 0:
                 train_writer.add_summary(summary, display_step)
                 train_writer.flush()
-                print('Iteration : {}, Epoch : {}, Top1_train : {:.3f}, Top5_train : {:.3f}, Train Loss : {:.3f}'.format(
-                    display_step, epoch, train_accuracy1, train_accuracy5, train_loss))
-        saver.save(sess, FLAGS.checkpoints_dir + '/add_model.ckpt')
+                print('Iteration : {}, Epoch : {}, Top1_train : {:.3f}, Top5_train : {:.3f}, Train Loss : {:.3f}'.
+                      format(i, epoch, train_accuracy1, train_accuracy5, train_loss))
+        saver.save(sess, FLAGS.checkpoints_dir + '/base/model.ckpt')
 
         # Test loss and accuracy
         temp = np.zeros([TEST_BATCH_SIZE, 3])
